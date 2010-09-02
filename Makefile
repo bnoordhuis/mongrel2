@@ -2,7 +2,7 @@ SQLITE3_DIR=deps/sqlite3-3.7.2
 ZEROMQ_DIR=deps/zeromq-2.0.8
 
 CFLAGS=-g -Wall -Isrc -I$(SQLITE3_DIR) -I$(ZEROMQ_DIR)/include
-LIBS=-lzmq -lsqlite3 -L$(SQLITE3_DIR) -L$(ZEROMQ_DIR)/src/.libs
+LDFLAGS=-pthread -luuid -ldl
 PREFIX?=/usr/local
 
 ASM=$(wildcard src/**/*.S src/*.S)
@@ -20,7 +20,7 @@ release: CFLAGS=-O2 -Wall -Isrc -DNDEBUG
 release: all
 
 bin/mongrel2: build/libm2.a src/mongrel2.o
-	$(CC) $(CFLAGS) $(LIBS) src/mongrel2.o -o $@ $<
+	$(CXX) $(LDFLAGS) src/mongrel2.o -o $@ $< $(SQLITE3_DIR)/sqlite3.a $(ZEROMQ_DIR)/src/.libs/libzmq.a
 
 build/libm2.a: build ${LIB_OBJ}
 	ar rcs $@ ${LIB_OBJ}
