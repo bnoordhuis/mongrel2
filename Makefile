@@ -65,7 +65,7 @@ check:
 	@echo Files with potentially dangerous functions.
 	@egrep '[^_.>a-zA-Z0-9](str(n?cpy|n?cat|xfrm|n?dup|str|pbrk|tok|_)|stpn?cpy|a?sn?printf|byte_)' $(filter-out src/bstr/bsafe.c,${SOURCES})
 
-install: all install-bin install-py 
+install: all install-bin #install-py 
 
 install-bin:
 	install -d $(PREFIX)/bin/
