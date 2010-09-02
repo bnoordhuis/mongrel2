@@ -1,0 +1,11 @@
+#define TKNEWLINE                         1
+#define TKSTRING                          2
+#define TKEQUALS                          3
+#define TKPATTERN                         4
+#define TKDICT_START                      5
+#define TKDICT_END                        6
+#define TKDEFAULTS                        7
+#define TKSEND                            8
+#define TKURL                             9
+#define TKEXPECT                         10
+#define TKNUMBER                         11

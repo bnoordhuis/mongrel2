@@ -1,0 +1,17 @@
+GET http://localhost:8080/iesucks HTTP/1.1
+Host: localhost
+
+PUT * HTTP/1.1
+Host: localhost
+
+GET /test#badfragment HTTP/1.1
+Host: localhost
+
+GET /test?stuff=values HTTP/1.1
+Host: localhost
+
+GET /test;param=value;param=value?stuff=values HTTP/1.1
+Host: testing
+
+GET /esape%20that HTTP/1.1
+Host: testing

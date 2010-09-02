@@ -1,0 +1,17 @@
+#!/bin/bash
+
+curl http://localhost:6767/
+
+curl http://localhost:6767/handlertest
+
+curl http://localhost:6767/chatdemo/
+
+curl http://localhost:6767/tests/sample.json
+
+curl http://localhost:6767/tests/crap
+
+curl -H 'X-Test-Bug: \"hi there"' http://localhost:6767/handlertest
+
+curl -H "KILLME: 1" http://localhost:6767/handlertest
+
+curl -T tests/config.sqlite http://localhost:6767/handlertest
