@@ -1,5 +1,5 @@
 CFLAGS=-g -Wall -Isrc -Ideps/zeromq-2.0.8/include
-LIBS=-lzmq -lsqlite3
+LIBS=-lzmq -lsqlite3 -Ldeps/zeromq-2.0.8/src/.libs
 PREFIX?=/usr/local
 
 ASM=$(wildcard src/**/*.S src/*.S)
