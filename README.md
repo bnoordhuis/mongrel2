@@ -12,3 +12,7 @@ Easy!
 
 The Python target has been disabled for now. It requires `sudo` to install
 and I don't like that.
+
+## Further reading
+
+http://mongrel2.org/ - see the Getting Started guide and the Mongrel2 Manual.
