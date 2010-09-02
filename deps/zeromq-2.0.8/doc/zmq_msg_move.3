@@ -1,0 +1,69 @@
+.\"     Title: zmq_msg_move
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
+.\"      Date: 08/25/2010
+.\"    Manual: 0MQ Manual
+.\"    Source: 0MQ 2.0.8
+.\"
+.TH "ZMQ_MSG_MOVE" "3" "08/25/2010" "0MQ 2\&.0\&.8" "0MQ Manual"
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.SH "NAME"
+zmq_msg_move \- move content of a message to another message
+.SH "SYNOPSIS"
+\fBint zmq_msg_move (zmq_msg_t \fR\fB\fI*dest\fR\fR\fB, zmq_msg_t \fR\fB\fI*src\fR\fR\fB);\fR
+.sp
+.SH "DESCRIPTION"
+The \fIzmq_msg_move()\fR function shall move the content of the message object referenced by \fIsrc\fR to the message object referenced by \fIdest\fR\&. No actual copying of message content is performed, \fIdest\fR is simply updated to reference the new content\&. \fIsrc\fR becomes an empty message after calling \fIzmq_msg_move()\fR\&. The original content of \fIdest\fR, if any, shall be released\&.
+.sp
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+Caution
+Never access \fIzmq_msg_t\fR members directly, instead always use the \fIzmq_msg\fR family of functions\&.
+.sp
+.SH "RETURN VALUE"
+The \fIzmq_msg_move()\fR function shall return zero if successful\&. Otherwise it shall return \-1 and set \fIerrno\fR to one of the values defined below\&.
+.sp
+.SH "ERRORS"
+No errors are defined\&.
+.sp
+.SH "SEE ALSO"
+\fBzmq_msg_copy\fR(3) \fBzmq_msg_init\fR(3) \fBzmq_msg_init_size\fR(3) \fBzmq_msg_init_data\fR(3) \fBzmq_msg_close\fR(3) \fBzmq\fR(7)
+.sp
+.SH "AUTHORS"
+The 0MQ reference manual was written by Martin Lucina <\fImato@kotelna\&.sk\fR\&[1]>, Martin Sustrik <\fIsustrik@250bpm\&.com\fR\&[2]>, and Pieter Hintjens <\fIph@imatix\&.com\fR\&[3]>\&.
+.sp
+.SH "RESOURCES"
+Main web site: \fIhttp://www\&.zeromq\&.org/\fR
+.sp
+Report bugs to the 0MQ development mailing list: <\fIzeromq\-dev@lists\&.zeromq\&.org\fR\&[4]>
+.sp
+.SH "COPYRIGHT"
+Copyright (c) 2007\-2010 iMatix Corporation and contributors\&. License LGPLv3+: GNU LGPL 3 or later <\fIhttp://gnu\&.org/licenses/lgpl\&.html\fR>\&. This is free software: you are free to change it and redistribute it\&. There is NO WARRANTY, to the extent permitted by law\&. For details see the files COPYING and COPYING\&.LESSER included with the 0MQ distribution\&.
+.sp
+.SH "NOTES"
+.IP " 1." 4
+mato@kotelna.sk
+.RS 4
+\%mailto:mato@kotelna.sk
+.RE
+.IP " 2." 4
+sustrik@250bpm.com
+.RS 4
+\%mailto:sustrik@250bpm.com
+.RE
+.IP " 3." 4
+ph@imatix.com
+.RS 4
+\%mailto:ph@imatix.com
+.RE
+.IP " 4." 4
+zeromq-dev@lists.zeromq.org
+.RS 4
+\%mailto:zeromq-dev@lists.zeromq.org
+.RE

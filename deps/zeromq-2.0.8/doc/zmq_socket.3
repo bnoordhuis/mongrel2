@@ -1,0 +1,712 @@
+.\"     Title: zmq_socket
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
+.\"      Date: 08/25/2010
+.\"    Manual: 0MQ Manual
+.\"    Source: 0MQ 2.0.8
+.\"
+.TH "ZMQ_SOCKET" "3" "08/25/2010" "0MQ 2\&.0\&.8" "0MQ Manual"
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.SH "NAME"
+zmq_socket \- create 0MQ socket
+.SH "SYNOPSIS"
+\fBvoid *zmq_socket (void \fR\fB\fI*context\fR\fR\fB, int \fR\fB\fItype\fR\fR\fB);\fR
+.sp
+.SH "DESCRIPTION"
+The \fIzmq_socket()\fR function shall create a 0MQ socket within the specified \fIcontext\fR and return an opaque handle to the newly created socket\&. The \fItype\fR argument specifies the socket type, which determines the semantics of communication over the socket\&.
+.sp
+The newly created socket is initially unbound, and not associated with any endpoints\&. In order to establish a message flow a socket must first be connected to at least one endpoint with \fBzmq_connect\fR(3), or at least one endpoint must be created for accepting incoming connections with \fBzmq_bind\fR(3)\&.
+.PP
+\fBKey differences to conventional sockets\fR. Generally speaking, conventional sockets present a
+\fIsynchronous\fR
+interface to either connection\-oriented reliable byte streams (SOCK_STREAM), or connection\-less unreliable datagrams (SOCK_DGRAM)\&. In comparison, 0MQ sockets present an abstraction of an asynchronous
+\fImessage queue\fR, with the exact queueing semantics depending on the socket type in use\&. Where conventional sockets transfer streams of bytes or discrete datagrams, 0MQ sockets transfer discrete
+\fImessages\fR\&.
+0MQ sockets being \fIasynchronous\fR means that the timings of the physical connection setup and teardown, reconnect and effective delivery are transparent to the user and organized by 0MQ itself\&. Further, messages may be \fIqueued\fR in the event that a peer is unavailable to receive them\&.
+.sp
+Conventional sockets allow only strict one\-to\-one (two peers), many\-to\-one (many clients, one server), or in some cases one\-to\-many (multicast) relationships\&. With the exception of \fIZMQ_PAIR\fR, 0MQ sockets may be connected \fBto multiple endpoints\fR using \fIzmq_connect()\fR, while simultaneously accepting incoming connections \fBfrom multiple endpoints\fR bound to the socket using \fIzmq_bind()\fR, thus allowing many\-to\-many relationships\&.
+.PP
+\fBSocket types\fR. The following sections present the socket types defined by 0MQ, grouped by the general
+\fImessaging pattern\fR
+which is built from related socket types\&.
+.SS "Request\-reply pattern"
+The request\-reply pattern is used for sending requests from a \fIclient\fR to one or more instances of a \fIservice\fR, and receiving subsequent replies to each request sent\&.
+.sp
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+ZMQ_REQ
+.RS
+A socket of type \fIZMQ_REQ\fR is used by a \fIclient\fR to send requests to and receive replies from a \fIservice\fR\&. This socket type allows only an alternating sequence of \fIzmq_send(request)\fR and subsequent \fIzmq_recv(reply)\fR calls\&. Each request sent is load\-balanced among all \fIservices\fR, and each reply received is matched with the last issued request\&.
+.sp
+When a \fIZMQ_REQ\fR socket enters an exceptional state due to having reached the high water mark for all \fIservices\fR, or if there are no \fIservices\fR at all, then any \fBzmq_send\fR(3) operations on the socket shall block until the exceptional state ends or at least one \fIservice\fR becomes available for sending; messages are not discarded\&.
+.PP
+.B Table\ \&1.\ \&Summary of ZMQ_REQ characteristics
+.sp -1n
+.TS
+tab(:);
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+Compatible peer sockets
+.sp
+T}:T{
+\fIZMQ_REP\fR
+.sp
+T}
+T{
+Direction
+.sp
+T}:T{
+Bidirectional
+.sp
+T}
+T{
+Send/receive pattern
+.sp
+T}:T{
+Send, Receive, Send, Receive, \&...
+.sp
+T}
+T{
+Outgoing routing strategy
+.sp
+T}:T{
+Load\-balanced
+.sp
+T}
+T{
+Incoming routing strategy
+.sp
+T}:T{
+Last peer
+.sp
+T}
+T{
+ZMQ_HWM option action
+.sp
+T}:T{
+Block
+.sp
+T}
+.TE
+.sp
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+ZMQ_REP
+.RS
+A socket of type \fIZMQ_REP\fR is used by a \fIservice\fR to receive requests from and send replies to a \fIclient\fR\&. This socket type allows only an alternating sequence of \fIzmq_recv(request)\fR and subsequent \fIzmq_send(reply)\fR calls\&. Each request received is fair\-queued from among all \fIclients\fR, and each reply sent is routed to the \fIclient\fR that issued the last request\&.
+.sp
+When a \fIZMQ_REP\fR socket enters an exceptional state due to having reached the high water mark for a \fIclient\fR, then any replies sent to the \fIclient\fR in question shall be dropped until the exceptional state ends\&.
+.PP
+.B Table\ \&2.\ \&Summary of ZMQ_REP characteristics
+.sp -1n
+.TS
+tab(:);
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+Compatible peer sockets
+.sp
+T}:T{
+\fIZMQ_REQ\fR
+.sp
+T}
+T{
+Direction
+.sp
+T}:T{
+Bidirectional
+.sp
+T}
+T{
+Send/receive pattern
+.sp
+T}:T{
+Receive, Send, Receive, Send, \&...
+.sp
+T}
+T{
+Incoming routing strategy
+.sp
+T}:T{
+Fair\-queued
+.sp
+T}
+T{
+Outgoing routing stratagy
+.sp
+T}:T{
+Last peer
+.sp
+T}
+T{
+ZMQ_HWM option action
+.sp
+T}:T{
+Drop
+.sp
+T}
+.TE
+.sp
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+ZMQ_XREQ
+.RS
+A socket of type \fIZMQ_XREQ\fR is an advanced pattern used for extending request/reply sockets\&. Each message sent is load\-balanced among all connected peers, and each message received is fair\-queued from all connected peers\&.
+.sp
+When a \fIZMQ_XREQ\fR socket enters an exceptional state due to having reached the high water mark for all peers, or if there are no peers at all, then any \fBzmq_send\fR(3) operations on the socket shall block until the exceptional state ends or at least one peer becomes available for sending; messages are not discarded\&.
+.sp
+When a \fIZMQ_XREQ\fR socket is connected to a \fIZMQ_REP\fR socket each message sent must consist of an empty message part, the \fIdelimiter\fR, followed by one or more \fIbody parts\fR\&.
+.PP
+.B Table\ \&3.\ \&Summary of ZMQ_XREQ characteristics
+.sp -1n
+.TS
+tab(:);
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+Compatible peer sockets
+.sp
+T}:T{
+\fIZMQ_XREP\fR, \fIZMQ_REP\fR
+.sp
+T}
+T{
+Direction
+.sp
+T}:T{
+Bidirectional
+.sp
+T}
+T{
+Send/receive pattern
+.sp
+T}:T{
+Unrestricted
+.sp
+T}
+T{
+Outgoing routing strategy
+.sp
+T}:T{
+Load\-balanced
+.sp
+T}
+T{
+Incoming routing strategy
+.sp
+T}:T{
+Fair\-queued
+.sp
+T}
+T{
+ZMQ_HWM option action
+.sp
+T}:T{
+Block
+.sp
+T}
+.TE
+.sp
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+ZMQ_XREP
+.RS
+A socket of type \fIZMQ_XREP\fR is an advanced pattern used for extending request/reply sockets\&. When receiving messages a \fIZMQ_XREP\fR socket shall prepend a message part containing the \fIidentity\fR of the originating peer to the message before passing it to the application\&. Messages received are fair\-queued from among all connected peers\&. When sending messages a \fIZMQ_XREP\fR socket shall remove the first part of the message and use it to determine the \fIidentity\fR of the peer the message shall be routed to\&.
+.sp
+When a \fIZMQ_XREP\fR socket enters an exceptional state due to having reached the high water mark for all peers, or if there are no peers at all, then any messages sent to the socket shall be dropped until the exceptional state ends\&. Likewise, any messages routed to a non\-existent peer or a peer for which the individual high water mark has been reached shall also be dropped\&.
+.sp
+When a \fIZMQ_REQ\fR socket is connected to a \fIZMQ_XREP\fR socket, in addition to the \fIidentity\fR of the originating peer each message received shall contain an empty \fIdelimiter\fR message part\&. Hence, the entire structure of each received message as seen by the application becomes: one or more \fIidentity\fR parts, \fIdelimiter\fR part, one or more \fIbody parts\fR\&. When sending replies to a \fIZMQ_REQ\fR socket the application must include the \fIdelimiter\fR part\&.
+.PP
+.B Table\ \&4.\ \&Summary of ZMQ_XREP characteristics
+.sp -1n
+.TS
+tab(:);
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+Compatible peer sockets
+.sp
+T}:T{
+\fIZMQ_XREQ\fR, \fIZMQ_REQ\fR
+.sp
+T}
+T{
+Direction
+.sp
+T}:T{
+Bidirectional
+.sp
+T}
+T{
+Send/receive pattern
+.sp
+T}:T{
+Unrestricted
+.sp
+T}
+T{
+Outgoing routing strategy
+.sp
+T}:T{
+See text
+.sp
+T}
+T{
+Incoming routing strategy
+.sp
+T}:T{
+Fair\-queued
+.sp
+T}
+T{
+ZMQ_HWM option action
+.sp
+T}:T{
+Drop
+.sp
+T}
+.TE
+.sp
+.RE
+.SS "Publish\-subscribe pattern"
+The publish\-subscribe pattern is used for one\-to\-many distribution of data from a single \fIpublisher\fR to multiple \fIsubscribers\fR in a fanout fashion\&.
+.sp
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+ZMQ_PUB
+.RS
+A socket of type \fIZMQ_PUB\fR is used by a \fIpublisher\fR to distribute data\&. Messages sent are distributed in a fanout fashion to all connected peers\&. The \fBzmq_recv\fR(3) function is not implemented for this socket type\&.
+.sp
+When a \fIZMQ_PUB\fR socket enters an exceptional state due to having reached the high water mark for a \fIsubscriber\fR, then any messages that would be sent to the \fIsubscriber\fR in question shall instead be dropped until the exceptional state ends\&.
+.PP
+.B Table\ \&5.\ \&Summary of ZMQ_PUB characteristics
+.sp -1n
+.TS
+tab(:);
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+Compatible peer sockets
+.sp
+T}:T{
+\fIZMQ_SUB\fR
+.sp
+T}
+T{
+Direction
+.sp
+T}:T{
+Unidirectional
+.sp
+T}
+T{
+Send/receive pattern
+.sp
+T}:T{
+Send only
+.sp
+T}
+T{
+Incoming routing strategy
+.sp
+T}:T{
+N/A
+.sp
+T}
+T{
+Outgoing routing strategy
+.sp
+T}:T{
+Fanout
+.sp
+T}
+T{
+ZMQ_HWM option action
+.sp
+T}:T{
+Drop
+.sp
+T}
+.TE
+.sp
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+ZMQ_SUB
+.RS
+A socket of type \fIZMQ_SUB\fR is used by a \fIsubscriber\fR to subscribe to data distributed by a \fIpublisher\fR\&. Initially a \fIZMQ_SUB\fR socket is not subscribed to any messages, use the \fIZMQ_SUBSCRIBE\fR option of \fBzmq_setsockopt\fR(3) to specify which messages to subscribe to\&. The \fIzmq_send()\fR function is not implemented for this socket type\&.
+.PP
+.B Table\ \&6.\ \&Summary of ZMQ_SUB characteristics
+.sp -1n
+.TS
+tab(:);
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+Compatible peer sockets
+.sp
+T}:T{
+\fIZMQ_PUB\fR
+.sp
+T}
+T{
+Direction
+.sp
+T}:T{
+Unidirectional
+.sp
+T}
+T{
+Send/receive pattern
+.sp
+T}:T{
+Receive only
+.sp
+T}
+T{
+Incoming routing strategy
+.sp
+T}:T{
+Fair\-queued
+.sp
+T}
+T{
+Outgoing routing strategy
+.sp
+T}:T{
+N/A
+.sp
+T}
+T{
+ZMQ_HWM option action
+.sp
+T}:T{
+N/A
+.sp
+T}
+.TE
+.sp
+.RE
+.SS "Pipeline pattern"
+The pipeline pattern is used for distributing data to \fInodes\fR arranged in a pipeline\&. Data always flows down the pipeline, and each stage of the pipeline is connected to at least one \fInode\fR\&. When a pipeline stage is connected to multiple \fInodes\fR data is load\-balanced among all connected \fInodes\fR\&.
+.sp
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+ZMQ_PUSH
+.RS
+A socket of type \fIZMQ_PUSH\fR is used by a pipeline \fInode\fR to send messages to downstream pipeline \fInodes\fR\&. Messages are load\-balanced to all connected downstream \fInodes\fR\&. The \fIzmq_recv()\fR function is not implemented for this socket type\&.
+.sp
+When a \fIZMQ_PUSH\fR socket enters an exceptional state due to having reached the high water mark for all downstream \fInodes\fR, or if there are no downstream \fInodes\fR at all, then any \fBzmq_send\fR(3) operations on the socket shall block until the exceptional state ends or at least one downstream \fInode\fR becomes available for sending; messages are not discarded\&.
+.sp
+Deprecated alias: ZMQ_DOWNSTREAM\&.
+.PP
+.B Table\ \&7.\ \&Summary of ZMQ_PUSH characteristics
+.sp -1n
+.TS
+tab(:);
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+Compatible peer sockets
+.sp
+T}:T{
+\fIZMQ_PULL\fR
+.sp
+T}
+T{
+Direction
+.sp
+T}:T{
+Unidirectional
+.sp
+T}
+T{
+Send/receive pattern
+.sp
+T}:T{
+Send only
+.sp
+T}
+T{
+Incoming routing strategy
+.sp
+T}:T{
+N/A
+.sp
+T}
+T{
+Outgoing routing strategy
+.sp
+T}:T{
+Load\-balanced
+.sp
+T}
+T{
+ZMQ_HWM option action
+.sp
+T}:T{
+Block
+.sp
+T}
+.TE
+.sp
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+ZMQ_PULL
+.RS
+A socket of type \fIZMQ_PULL\fR is used by a pipeline \fInode\fR to receive messages from upstream pipeline \fInodes\fR\&. Messages are fair\-queued from among all connected upstream \fInodes\fR\&. The \fIzmq_send()\fR function is not implemented for this socket type\&.
+.sp
+Deprecated alias: ZMQ_UPSTREAM\&.
+.PP
+.B Table\ \&8.\ \&Summary of ZMQ_PULL characteristics
+.sp -1n
+.TS
+tab(:);
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+Compatible peer sockets
+.sp
+T}:T{
+\fIZMQ_PUSH\fR
+.sp
+T}
+T{
+Direction
+.sp
+T}:T{
+Unidirectional
+.sp
+T}
+T{
+Send/receive pattern
+.sp
+T}:T{
+Receive only
+.sp
+T}
+T{
+Incoming routing strategy
+.sp
+T}:T{
+Fair\-queued
+.sp
+T}
+T{
+Outgoing routing strategy
+.sp
+T}:T{
+N/A
+.sp
+T}
+T{
+ZMQ_HWM option action
+.sp
+T}:T{
+N/A
+.sp
+T}
+.TE
+.sp
+.RE
+.SS "Exclusive pair pattern"
+The exclusive pair is an advanced pattern used for communicating exclusively between two peers\&.
+.sp
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+ZMQ_PAIR
+.RS
+A socket of type \fIZMQ_PAIR\fR can only be connected to a single peer at any one time\&. No message routing or filtering is performed on messages sent over a \fIZMQ_PAIR\fR socket\&.
+.sp
+When a \fIZMQ_PAIR\fR socket enters an exceptional state due to having reached the high water mark for the connected peer, or if no peer is connected, then any \fBzmq_send\fR(3) operations on the socket shall block until the peer becomes available for sending; messages are not discarded\&.
+.sp
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+Note
+\fIZMQ_PAIR\fR sockets are experimental, and are currently missing several features such as auto\-reconnection\&.
+.PP
+.B Table\ \&9.\ \&Summary of ZMQ_PAIR characteristics
+.sp -1n
+.TS
+tab(:);
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt
+lt lt.
+T{
+Compatible peer sockets
+.sp
+T}:T{
+\fIZMQ_PAIR\fR
+.sp
+T}
+T{
+Direction
+.sp
+T}:T{
+Bidirectional
+.sp
+T}
+T{
+Send/receive pattern
+.sp
+T}:T{
+Unrestricted
+.sp
+T}
+T{
+Incoming routing strategy
+.sp
+T}:T{
+N/A
+.sp
+T}
+T{
+Outgoing routing strategy
+.sp
+T}:T{
+N/A
+.sp
+T}
+T{
+ZMQ_HWM option action
+.sp
+T}:T{
+Block
+.sp
+T}
+.TE
+.sp
+.RE
+.SH "RETURN VALUE"
+The \fIzmq_socket()\fR function shall return an opaque handle to the newly created socket if successful\&. Otherwise, it shall return NULL and set \fIerrno\fR to one of the values defined below\&.
+.sp
+.SH "ERRORS"
+.PP
+\fBEINVAL\fR
+.RS 4
+The requested socket
+\fItype\fR
+is invalid\&.
+.RE
+.PP
+\fBEMTHREAD\fR
+.RS 4
+The maximum number of sockets within this
+\fIcontext\fR
+has been exceeded\&.
+.RE
+.PP
+\fBEFAULT\fR
+.RS 4
+The provided
+\fIcontext\fR
+was not valid (NULL)\&.
+.RE
+.SH "SEE ALSO"
+\fBzmq_init\fR(3) \fBzmq_setsockopt\fR(3) \fBzmq_bind\fR(3) \fBzmq_connect\fR(3) \fBzmq_send\fR(3) \fBzmq_recv\fR(3) \fBzmq\fR(7)
+.sp
+.SH "AUTHORS"
+The 0MQ reference manual was written by Martin Lucina <\fImato@kotelna\&.sk\fR\&[1]>, Martin Sustrik <\fIsustrik@250bpm\&.com\fR\&[2]>, and Pieter Hintjens <\fIph@imatix\&.com\fR\&[3]>\&.
+.sp
+.SH "RESOURCES"
+Main web site: \fIhttp://www\&.zeromq\&.org/\fR
+.sp
+Report bugs to the 0MQ development mailing list: <\fIzeromq\-dev@lists\&.zeromq\&.org\fR\&[4]>
+.sp
+.SH "COPYRIGHT"
+Copyright (c) 2007\-2010 iMatix Corporation and contributors\&. License LGPLv3+: GNU LGPL 3 or later <\fIhttp://gnu\&.org/licenses/lgpl\&.html\fR>\&. This is free software: you are free to change it and redistribute it\&. There is NO WARRANTY, to the extent permitted by law\&. For details see the files COPYING and COPYING\&.LESSER included with the 0MQ distribution\&.
+.sp
+.SH "NOTES"
+.IP " 1." 4
+mato@kotelna.sk
+.RS 4
+\%mailto:mato@kotelna.sk
+.RE
+.IP " 2." 4
+sustrik@250bpm.com
+.RS 4
+\%mailto:sustrik@250bpm.com
+.RE
+.IP " 3." 4
+ph@imatix.com
+.RS 4
+\%mailto:ph@imatix.com
+.RE
+.IP " 4." 4
+zeromq-dev@lists.zeromq.org
+.RS 4
+\%mailto:zeromq-dev@lists.zeromq.org
+.RE

@@ -1,0 +1,66 @@
+.\"     Title: zmq_close
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
+.\"      Date: 08/25/2010
+.\"    Manual: 0MQ Manual
+.\"    Source: 0MQ 2.0.8
+.\"
+.TH "ZMQ_CLOSE" "3" "08/25/2010" "0MQ 2\&.0\&.8" "0MQ Manual"
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.SH "NAME"
+zmq_close \- close 0MQ socket
+.SH "SYNOPSIS"
+\fBint zmq_close (void \fR\fB\fI*socket\fR\fR\fB);\fR
+.sp
+.SH "DESCRIPTION"
+The \fIzmq_close()\fR function shall destroy the socket referenced by the \fIsocket\fR argument\&. All active connections on the socket shall be terminated and resources associated with the socket shall be released\&. Any outstanding messages sent with \fIzmq_send()\fR but not yet physically sent to the network shall be dropped\&. Likewise, any outstanding messages physically received from the network but not yet received by the application with \fIzmq_recv()\fR shall also be dropped\&.
+.sp
+.SH "RETURN VALUE"
+The \fIzmq_close()\fR function shall return zero if successful\&. Otherwise it shall return \-1 and set \fIerrno\fR to one of the values defined below\&.
+.sp
+.SH "ERRORS"
+.PP
+\fBEFAULT\fR
+.RS 4
+The provided
+\fIsocket\fR
+was not valid (NULL)\&.
+.RE
+.SH "SEE ALSO"
+\fBzmq_socket\fR(3) \fBzmq_term\fR(3) \fBzmq\fR(7)
+.sp
+.SH "AUTHORS"
+The 0MQ reference manual was written by Martin Lucina <\fImato@kotelna\&.sk\fR\&[1]>, Martin Sustrik <\fIsustrik@250bpm\&.com\fR\&[2]>, and Pieter Hintjens <\fIph@imatix\&.com\fR\&[3]>\&.
+.sp
+.SH "RESOURCES"
+Main web site: \fIhttp://www\&.zeromq\&.org/\fR
+.sp
+Report bugs to the 0MQ development mailing list: <\fIzeromq\-dev@lists\&.zeromq\&.org\fR\&[4]>
+.sp
+.SH "COPYRIGHT"
+Copyright (c) 2007\-2010 iMatix Corporation and contributors\&. License LGPLv3+: GNU LGPL 3 or later <\fIhttp://gnu\&.org/licenses/lgpl\&.html\fR>\&. This is free software: you are free to change it and redistribute it\&. There is NO WARRANTY, to the extent permitted by law\&. For details see the files COPYING and COPYING\&.LESSER included with the 0MQ distribution\&.
+.sp
+.SH "NOTES"
+.IP " 1." 4
+mato@kotelna.sk
+.RS 4
+\%mailto:mato@kotelna.sk
+.RE
+.IP " 2." 4
+sustrik@250bpm.com
+.RS 4
+\%mailto:sustrik@250bpm.com
+.RE
+.IP " 3." 4
+ph@imatix.com
+.RS 4
+\%mailto:ph@imatix.com
+.RE
+.IP " 4." 4
+zeromq-dev@lists.zeromq.org
+.RS 4
+\%mailto:zeromq-dev@lists.zeromq.org
+.RE

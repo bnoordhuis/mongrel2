@@ -1,0 +1,157 @@
+.\"     Title: zmq_send
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
+.\"      Date: 08/25/2010
+.\"    Manual: 0MQ Manual
+.\"    Source: 0MQ 2.0.8
+.\"
+.TH "ZMQ_SEND" "3" "08/25/2010" "0MQ 2\&.0\&.8" "0MQ Manual"
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.SH "NAME"
+zmq_send \- send a message on a socket
+.SH "SYNOPSIS"
+\fBint zmq_send (void \fR\fB\fI*socket\fR\fR\fB, zmq_msg_t \fR\fB\fI*msg\fR\fR\fB, int \fR\fB\fIflags\fR\fR\fB);\fR
+.sp
+.SH "DESCRIPTION"
+The \fIzmq_send()\fR function shall queue the message referenced by the \fImsg\fR argument to be sent to the socket referenced by the \fIsocket\fR argument\&. The \fIflags\fR argument is a combination of the flags defined below:
+.PP
+\fBZMQ_NOBLOCK\fR
+.RS 4
+Specifies that the operation should be performed in non\-blocking mode\&. If the message cannot be queued on the
+\fIsocket\fR, the
+\fIzmq_send()\fR
+function shall fail with
+\fIerrno\fR
+set to EAGAIN\&.
+.RE
+.PP
+\fBZMQ_SNDMORE\fR
+.RS 4
+Specifies that the message being sent is a multi\-part message, and that further message parts are to follow\&. Refer to the section regarding multi\-part messages below for a detailed description\&.
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+Note
+A successful invocation of \fIzmq_send()\fR does not indicate that the message has been transmitted to the network, only that it has been queued on the \fIsocket\fR and 0MQ has assumed responsibility for the message\&.
+.sp
+.SS "Multi\-part messages"
+A 0MQ message is composed of 1 or more message parts; each message part is an independent \fIzmq_msg_t\fR in its own right\&. 0MQ ensures atomic delivery of messages; peers shall receive either all \fImessage parts\fR of a message or none at all\&.
+.sp
+The total number of message parts is unlimited\&.
+.sp
+An application wishing to send a multi\-part message does so by specifying the \fIZMQ_SNDMORE\fR flag to \fIzmq_send()\fR\&. The presence of this flag indicates to 0MQ that the message being sent is a multi\-part message and that more message parts are to follow\&. When the application wishes to send the final message part it does so by calling \fIzmq_send()\fR without the \fIZMQ_SNDMORE\fR flag; this indicates that no more message parts are to follow\&.
+.sp
+.SH "RETURN VALUE"
+The \fIzmq_send()\fR function shall return zero if successful\&. Otherwise it shall return \-1 and set \fIerrno\fR to one of the values defined below\&.
+.sp
+.SH "ERRORS"
+.PP
+\fBEAGAIN\fR
+.RS 4
+Non\-blocking mode was requested and the message cannot be sent at the moment\&.
+.RE
+.PP
+\fBENOTSUP\fR
+.RS 4
+The
+\fIzmq_send()\fR
+operation is not supported by this socket type\&.
+.RE
+.PP
+\fBEFSM\fR
+.RS 4
+The
+\fIzmq_send()\fR
+operation cannot be performed on this socket at the moment due to the socket not being in the appropriate state\&. This error may occur with socket types that switch between several states, such as ZMQ_REP\&. See the
+\fImessaging patterns\fR
+section of
+\fBzmq_socket\fR(3)
+for more information\&.
+.RE
+.PP
+\fBETERM\fR
+.RS 4
+The 0MQ
+\fIcontext\fR
+associated with the specified
+\fIsocket\fR
+was terminated\&.
+.RE
+.PP
+\fBEFAULT\fR
+.RS 4
+The provided
+\fIcontext\fR
+was not valid (NULL)\&.
+.RE
+.SH "EXAMPLE"
+.PP
+\fBFilling in a message and sending it to a socket\fR. 
+.sp
+.RS 4
+.nf
+/* Create a new message, allocating 6 bytes for message content */
+zmq_msg_t msg;
+int rc = zmq_msg_init_size (&msg, 6);
+assert (rc == 0);
+/* Fill in message content with \'AAAAAA\' */
+memset (zmq_msg_data (&msg), \'A\', 6);
+/* Send the message to the socket */
+rc = zmq_send (socket, &msg, 0);
+assert (rc == 0);
+.fi
+.RE
+.PP
+\fBSending a multi-part message\fR. 
+.sp
+.RS 4
+.nf
+/* Send a multi\-part message consisting of three parts to socket */
+rc = zmq_send (socket, &part1, ZMQ_SNDMORE);
+rc = zmq_send (socket, &part2, ZMQ_SNDMORE);
+/* Final part; no more parts to follow */
+rc = zmq_send (socket, &part3, 0);
+.fi
+.RE
+.sp
+.SH "SEE ALSO"
+\fBzmq_recv\fR(3) \fBzmq_socket\fR(7) \fBzmq\fR(7)
+.sp
+.SH "AUTHORS"
+The 0MQ reference manual was written by Martin Lucina <\fImato@kotelna\&.sk\fR\&[1]>, Martin Sustrik <\fIsustrik@250bpm\&.com\fR\&[2]>, and Pieter Hintjens <\fIph@imatix\&.com\fR\&[3]>\&.
+.sp
+.SH "RESOURCES"
+Main web site: \fIhttp://www\&.zeromq\&.org/\fR
+.sp
+Report bugs to the 0MQ development mailing list: <\fIzeromq\-dev@lists\&.zeromq\&.org\fR\&[4]>
+.sp
+.SH "COPYRIGHT"
+Copyright (c) 2007\-2010 iMatix Corporation and contributors\&. License LGPLv3+: GNU LGPL 3 or later <\fIhttp://gnu\&.org/licenses/lgpl\&.html\fR>\&. This is free software: you are free to change it and redistribute it\&. There is NO WARRANTY, to the extent permitted by law\&. For details see the files COPYING and COPYING\&.LESSER included with the 0MQ distribution\&.
+.sp
+.SH "NOTES"
+.IP " 1." 4
+mato@kotelna.sk
+.RS 4
+\%mailto:mato@kotelna.sk
+.RE
+.IP " 2." 4
+sustrik@250bpm.com
+.RS 4
+\%mailto:sustrik@250bpm.com
+.RE
+.IP " 3." 4
+ph@imatix.com
+.RS 4
+\%mailto:ph@imatix.com
+.RE
+.IP " 4." 4
+zeromq-dev@lists.zeromq.org
+.RS 4
+\%mailto:zeromq-dev@lists.zeromq.org
+.RE

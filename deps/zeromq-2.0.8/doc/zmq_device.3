@@ -1,0 +1,165 @@
+.\"     Title: zmq_device
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
+.\"      Date: 08/25/2010
+.\"    Manual: 0MQ Manual
+.\"    Source: 0MQ 2.0.8
+.\"
+.TH "ZMQ_DEVICE" "3" "08/25/2010" "0MQ 2\&.0\&.8" "0MQ Manual"
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.SH "NAME"
+zmq_device \- start built-in 0MQ device
+.SH "SYNOPSIS"
+\fBint zmq_device (int \fR\fB\fIdevice\fR\fR\fB, const void \fR\fB\fI*frontend\fR\fR\fB, const void \fR\fB\fI*backend\fR\fR\fB);\fR
+.sp
+.SH "DESCRIPTION"
+The \fIzmq_device()\fR function starts a built\-in 0MQ device\&. The \fIdevice\fR argument is one of:
+.PP
+\fIZMQ_QUEUE\fR
+.RS 4
+starts a queue device
+.RE
+.PP
+\fIZMQ_FORWARDER\fR
+.RS 4
+starts a forwarder device
+.RE
+.PP
+\fIZMQ_STREAMER\fR
+.RS 4
+starts a streamer device
+.RE
+The device connects a frontend socket to a backend socket\&. Conceptually, data flows from frontend to backend\&. Depending on the socket types, replies may flow in the opposite direction\&.
+.sp
+Before calling \fIzmq_device()\fR you must set any socket options, and connect or bind both frontend and backend sockets\&. The two conventional device models are:
+.sp
+.sp
+.RS 4
+\h'-04'\(bu\h'+03'proxy model \- accept inward connections to frontend socket (by binding it to an endpoint), and make onward connections through backend socket (connecting to endpoints on other nodes)\&. A proxy device model can fit well into an existing topology\&.
+.RE
+.sp
+.RS 4
+\h'-04'\(bu\h'+03'broker model \- accept connections on both frontend and backend sockets (by binding both to endpoints)\&. A broker device model creates a star topology where nodes can come and go at any time\&.
+.RE
+\fIzmq_device()\fR runs in the current thread and returns only if/when the current context is closed\&.
+.sp
+.SH "QUEUE DEVICE"
+\fIZMQ_QUEUE\fR creates a shared queue that collects requests from a set of clients, and distributes these fairly among a set of services\&. Requests are fair\-queued from frontend connections and load\-balanced between backend connections\&. Replies automatically return to the client that made the original request\&.
+.sp
+This device is part of the \fIrequest\-reply\fR pattern\&. The frontend speaks to clients and the backend speaks to services\&. You should use \fIZMQ_QUEUE\fR with a \fIZMQ_XREP\fR socket for the frontend and a \fIZMQ_XREQ\fR socket for the backend\&. Other combinations are not documented\&.
+.sp
+Refer to \fBzmq_socket\fR(3) for a description of these socket types\&.
+.sp
+.SH "FORWARDER DEVICE"
+\fIZMQ_FORWARDER\fR collects messages from a set of publishers and forwards these to a set of subscribers\&. You will generally use this to bridge networks, e\&.g\&. read on TCP unicast and forward on multicast\&.
+.sp
+This device is part of the \fIpublish\-subscribe\fR pattern\&. The frontend speaks to publishers and the backend speaks to subscribers\&. You should use \fIZMQ_FORWARDER\fR with a \fIZMQ_SUB\fR socket for the frontend and a \fIZMQ_PUB\fR socket for the backend\&. Other combinations are not documented\&.
+.sp
+Refer to \fBzmq_socket\fR(3) for a description of these socket types\&.
+.sp
+.SH "STREAMER DEVICE"
+\fIZMQ_STREAMER\fR collects tasks from a set of pushers and forwards these to a set of pullers\&. You will generally use this to bridge networks\&. Messages are fair\-queued from pushers and load\-balanced to pullers\&.
+.sp
+This device is part of the \fIpipeline\fR pattern\&. The frontend speaks to pushers and the backend speaks to pullers\&. You should use \fIZMQ_STREAMER\fR with a \fIZMQ_PULL\fR socket for the frontend and a \fIZMQ_PUSH\fR socket for the backend\&. Other combinations are not documented\&.
+.sp
+Refer to \fBzmq_socket\fR(3) for a description of these socket types\&.
+.sp
+.SH "RETURN VALUE"
+The \fIzmq_device()\fR function shall not return if successful\&. Otherwise it shall return \-1 and set \fIerrno\fR to one of the values defined below\&.
+.sp
+.SH "ERRORS"
+.PP
+\fBETERM\fR
+.RS 4
+The 0MQ
+\fIcontext\fR
+associated with the specified
+\fIfrontend\fR
+or
+\fIbackend\fR
+was terminated\&.
+.RE
+.PP
+\fBEFAULT\fR
+.RS 4
+The provided
+\fIfrontend\fR
+or
+\fIbackend\fR
+was not valid (NULL)\&.
+.RE
+.SH "EXAMPLE"
+.PP
+\fBCreating a queue broker\fR. 
+.sp
+.RS 4
+.nf
+//  Create frontend and backend sockets
+void *frontend = zmq_socket (context, ZMQ_XREP);
+assert (backend);
+void *backend = zmq_socket (context, ZMQ_XREQ);
+assert (frontend);
+//  Bind both sockets to TCP ports
+assert (zmq_bind (frontend, "tcp://*:5555") == 0);
+assert (zmq_bind (backend, "tcp://*:5556") == 0);
+//  Start a queue device
+zmq_device (ZMQ_QUEUE, frontend, backend);
+.fi
+.RE
+.PP
+\fBCreating a pubsub proxy\fR. 
+.sp
+.RS 4
+.nf
+//  Create frontend and backend sockets
+void *frontend = zmq_socket (context, ZMQ_SUB);
+assert (backend);
+void *backend = zmq_socket (context, ZMQ_PUB);
+assert (frontend);
+//  Connect frontend to publisher
+assert (zmq_bind (frontend, "tcp://192\&.68\&.55\&.112:4444") == 0);
+//  Bind backend to TCP port
+assert (zmq_bind (backend, "tcp://*:5556") == 0);
+//  Start a forwarder device
+zmq_device (ZMQ_FORWARDER, frontend, backend);
+.fi
+.RE
+.sp
+.SH "SEE ALSO"
+\fBzmq_bind\fR(3) \fBzmq_connect\fR(3) \fBzmq_socket\fR(3) \fBzmq\fR(7)
+.sp
+.SH "AUTHORS"
+The 0MQ reference manual was written by Martin Lucina <\fImato@kotelna\&.sk\fR\&[1]>, Martin Sustrik <\fIsustrik@250bpm\&.com\fR\&[2]>, and Pieter Hintjens <\fIph@imatix\&.com\fR\&[3]>\&.
+.sp
+.SH "RESOURCES"
+Main web site: \fIhttp://www\&.zeromq\&.org/\fR
+.sp
+Report bugs to the 0MQ development mailing list: <\fIzeromq\-dev@lists\&.zeromq\&.org\fR\&[4]>
+.sp
+.SH "COPYRIGHT"
+Copyright (c) 2007\-2010 iMatix Corporation and contributors\&. License LGPLv3+: GNU LGPL 3 or later <\fIhttp://gnu\&.org/licenses/lgpl\&.html\fR>\&. This is free software: you are free to change it and redistribute it\&. There is NO WARRANTY, to the extent permitted by law\&. For details see the files COPYING and COPYING\&.LESSER included with the 0MQ distribution\&.
+.sp
+.SH "NOTES"
+.IP " 1." 4
+mato@kotelna.sk
+.RS 4
+\%mailto:mato@kotelna.sk
+.RE
+.IP " 2." 4
+sustrik@250bpm.com
+.RS 4
+\%mailto:sustrik@250bpm.com
+.RE
+.IP " 3." 4
+ph@imatix.com
+.RS 4
+\%mailto:ph@imatix.com
+.RE
+.IP " 4." 4
+zeromq-dev@lists.zeromq.org
+.RS 4
+\%mailto:zeromq-dev@lists.zeromq.org
+.RE

@@ -1,0 +1,100 @@
+.\"     Title: zmq_inproc
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
+.\"      Date: 08/25/2010
+.\"    Manual: 0MQ Manual
+.\"    Source: 0MQ 2.0.8
+.\"
+.TH "ZMQ_INPROC" "7" "08/25/2010" "0MQ 2\&.0\&.8" "0MQ Manual"
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.SH "NAME"
+zmq_inproc \- 0MQ local in-process (inter-thread) communication transport
+.SH "SYNOPSIS"
+The in\-process transport passes messages via memory directly between threads sharing a single 0MQ \fIcontext\fR\&.
+.sp
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+Note
+No I/O threads are involved in passing messages using the \fIinproc\fR transport\&. Therefore, if you are using a 0MQ \fIcontext\fR for in\-process messaging only you can initialise the \fIcontext\fR with zero I/O threads\&. See \fBzmq_init\fR(3) for details\&.
+.sp
+.SH "ADDRESSING"
+A 0MQ address string consists of two parts as follows: \fItransport\fR://\fIendpoint\fR\&. The \fItransport\fR part specifies the underlying transport protocol to use, and for the in\-process transport shall be set to inproc\&. The meaning of the \fIendpoint\fR part for the in\-process transport is defined below\&.
+.sp
+.SS "Assigning a local address to a socket"
+When assigning a local address to a \fIsocket\fR using \fIzmq_bind()\fR with the \fIinproc\fR transport, the \fIendpoint\fR shall be interpreted as an arbitrary string identifying the \fIname\fR to create\&. The \fIname\fR must be unique within the 0MQ \fIcontext\fR associated with the \fIsocket\fR and may be up to 256 characters in length\&. No other restrictions are placed on the format of the \fIname\fR\&.
+.sp
+.SS "Connecting a socket"
+When connecting a \fIsocket\fR to a peer address using \fIzmq_connect()\fR with the \fIinproc\fR transport, the \fIendpoint\fR shall be interpreted as an arbitrary string identifying the \fIname\fR to connect to\&. The \fIname\fR must have been previously created by assigning it to at least one \fIsocket\fR within the same 0MQ \fIcontext\fR as the \fIsocket\fR being connected\&.
+.sp
+.SH "WIRE FORMAT"
+Not applicable\&.
+.sp
+.SH "EXAMPLES"
+.PP
+\fBAssigning a local address to a socket\fR. 
+.sp
+.RS 4
+.nf
+/* Assign the in\-process name "#1" */
+rc = zmq_bind(socket, "inproc://#1");
+assert (rc == 0);
+/* Assign the in\-process name "my\-endpoint" */
+rc = zmq_bind(socket, "inproc://my\-endpoint");
+assert (rc == 0);
+.fi
+.RE
+.PP
+\fBConnecting a socket\fR. 
+.sp
+.RS 4
+.nf
+/* Connect to the in\-process name "#1" */
+rc = zmq_connect(socket, "inproc://#1");
+assert (rc == 0);
+/* Connect to the in\-process name "my\-endpoint" */
+rc = zmq_connect(socket, "inproc://my\-endpoint");
+assert (rc == 0);
+.fi
+.RE
+.sp
+.SH "SEE ALSO"
+\fBzmq_bind\fR(3) \fBzmq_connect\fR(3) \fBzmq_ipc\fR(7) \fBzmq_tcp\fR(7) \fBzmq_pgm\fR(7) \fBzmq\fR(7)
+.sp
+.SH "AUTHORS"
+The 0MQ reference manual was written by Martin Lucina <\fImato@kotelna\&.sk\fR\&[1]>, Martin Sustrik <\fIsustrik@250bpm\&.com\fR\&[2]>, and Pieter Hintjens <\fIph@imatix\&.com\fR\&[3]>\&.
+.sp
+.SH "RESOURCES"
+Main web site: \fIhttp://www\&.zeromq\&.org/\fR
+.sp
+Report bugs to the 0MQ development mailing list: <\fIzeromq\-dev@lists\&.zeromq\&.org\fR\&[4]>
+.sp
+.SH "COPYRIGHT"
+Copyright (c) 2007\-2010 iMatix Corporation and contributors\&. License LGPLv3+: GNU LGPL 3 or later <\fIhttp://gnu\&.org/licenses/lgpl\&.html\fR>\&. This is free software: you are free to change it and redistribute it\&. There is NO WARRANTY, to the extent permitted by law\&. For details see the files COPYING and COPYING\&.LESSER included with the 0MQ distribution\&.
+.sp
+.SH "NOTES"
+.IP " 1." 4
+mato@kotelna.sk
+.RS 4
+\%mailto:mato@kotelna.sk
+.RE
+.IP " 2." 4
+sustrik@250bpm.com
+.RS 4
+\%mailto:sustrik@250bpm.com
+.RE
+.IP " 3." 4
+ph@imatix.com
+.RS 4
+\%mailto:ph@imatix.com
+.RE
+.IP " 4." 4
+zeromq-dev@lists.zeromq.org
+.RS 4
+\%mailto:zeromq-dev@lists.zeromq.org
+.RE
