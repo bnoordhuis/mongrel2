@@ -1,4 +1,4 @@
-CFLAGS=-g -Wall -Isrc 
+CFLAGS=-g -Wall -Isrc -Ideps/zeromq-2.0.8/include
 LIBS=-lzmq -lsqlite3
 PREFIX?=/usr/local
 
