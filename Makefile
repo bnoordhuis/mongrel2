@@ -14,7 +14,7 @@ LIB_OBJ=$(filter-out src/mongrel2.o,${OBJECTS})
 TEST_SRC=$(wildcard tests/*.c)
 TESTS=$(patsubst %.c,%,${TEST_SRC})
 
-all: sqlite3 zeromq bin/mongrel2 tests
+all: sqlite3 zeromq bin/mongrel2 #tests
 
 release: CFLAGS=-O2 -Wall -Isrc -DNDEBUG
 release: all
