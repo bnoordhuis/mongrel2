@@ -32,3 +32,4 @@ tests/tst_tests
 tests/unixy_tests
 tests/empty.sqlite
 tests/test.pid
+examples/python/build/
