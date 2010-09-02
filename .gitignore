@@ -1,5 +1,6 @@
 *.o
 *.a
+*.log
 bin/
 tests/bstr_tests
 tests/cache_tests
@@ -29,3 +30,5 @@ tests/state_tests
 tests/superpoll_tests
 tests/tst_tests
 tests/unixy_tests
+tests/empty.sqlite
+tests/test.pid
