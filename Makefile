@@ -1,5 +1,8 @@
-CFLAGS=-g -Wall -Isrc -Ideps/zeromq-2.0.8/include
-LIBS=-lzmq -lsqlite3 -Ldeps/zeromq-2.0.8/src/.libs
+SQLITE3_DIR=deps/sqlite3-3.7.2
+ZEROMQ_DIR=deps/zeromq-2.0.8
+
+CFLAGS=-g -Wall -Isrc -I$(SQLITE3_DIR) -I$(ZEROMQ_DIR)/include
+LIBS=-lzmq -lsqlite3 -L$(SQLITE3_DIR) -L$(ZEROMQ_DIR)/src/.libs
 PREFIX?=/usr/local
 
 ASM=$(wildcard src/**/*.S src/*.S)
@@ -11,7 +14,7 @@ LIB_OBJ=$(filter-out src/mongrel2.o,${OBJECTS})
 TEST_SRC=$(wildcard tests/*.c)
 TESTS=$(patsubst %.c,%,${TEST_SRC})
 
-all: bin/mongrel2 tests
+all: sqlite3 zeromq bin/mongrel2 tests
 
 release: CFLAGS=-O2 -Wall -Isrc -DNDEBUG
 release: all
@@ -30,6 +33,8 @@ build:
 clean:
 	rm -rf build bin lib ${OBJECTS} ${TESTS} tests/config.sqlite
 	find . -name "*.gc*" -exec rm {} \;
+	cd $(SQLITE3_DIR) && $(MAKE) clean
+	cd $(ZEROMQ_DIR) && $(MAKE) clean
 
 pristine: clean
 	sudo rm -rf examples/python/build examples/python/dist examples/python/m2py.egg-info
@@ -97,3 +102,9 @@ coverage_report:
 system_tests:
 	./tests/system_tests/curl_tests
 	./tests/system_tests/chat_tests
+
+sqlite3:
+	cd $(SQLITE3_DIR) && $(MAKE)
+
+zeromq:
+	cd $(ZEROMQ_DIR) && $(MAKE)
