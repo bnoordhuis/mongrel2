@@ -39,13 +39,14 @@ clean:
 distclean:	pristine
 
 pristine: clean
-	sudo rm -rf examples/python/build examples/python/dist examples/python/m2py.egg-info
-	sudo find . -name "*.pyc" -exec rm {} \;
+	rm -rf examples/python/build examples/python/dist examples/python/m2py.egg-info
+	find . -name "*.pyc" -exec rm {} \;
 	cd docs/manual && make clean
 	cd docs/ && make clean
 	cd examples/kegogi && make clean
 	rm -f logs/*
 	rm -f run/*
+	cd $(ZEROMQ_DIR) && rm -f Makefile
 
 tests: build/libm2.a tests/config.sqlite ${TESTS}
 	sh ./tests/runtests.sh
