@@ -106,5 +106,8 @@ system_tests:
 sqlite3:
 	cd $(SQLITE3_DIR) && $(MAKE)
 
-zeromq:
+zeromq:	$(ZEROMQ_DIR)/Makefile
 	cd $(ZEROMQ_DIR) && $(MAKE)
+
+$(ZEROMQ_DIR)/Makefile:
+	cd $(ZEROMQ_DIR) && ./configure --prefix=$(PREFIX)
