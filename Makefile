@@ -14,13 +14,15 @@ LIB_OBJ=$(filter-out src/mongrel2.o,${OBJECTS})
 TEST_SRC=$(wildcard tests/*.c)
 TESTS=$(patsubst %.c,%,${TEST_SRC})
 
-all: sqlite3 zeromq bin/mongrel2 #tests
+STATIC_LIBS=build/libm2.a $(SQLITE3_DIR)/sqlite3.a $(ZEROMQ_DIR)/src/.libs/libzmq.a
+
+all: bin/mongrel2 tests
 
 release: CFLAGS=-O2 -Wall -Isrc -DNDEBUG
 release: all
 
-bin/mongrel2: build/libm2.a src/mongrel2.o
-	$(CXX) $(LDFLAGS) src/mongrel2.o -o $@ $< $(SQLITE3_DIR)/sqlite3.a $(ZEROMQ_DIR)/src/.libs/libzmq.a
+bin/mongrel2: $(STATIC_LIBS) src/mongrel2.o
+	$(CXX) $(LDFLAGS) src/mongrel2.o -o $@ $(STATIC_LIBS)
 
 build/libm2.a: build ${LIB_OBJ}
 	ar rcs $@ ${LIB_OBJ}
@@ -35,6 +37,7 @@ clean:
 	find . -name "*.gc*" -exec rm {} \;
 	cd $(SQLITE3_DIR) && $(MAKE) clean
 	cd $(ZEROMQ_DIR) && $(MAKE) clean
+	rm -f $(TESTS) tests/*.o
 
 distclean:	pristine
 
@@ -56,8 +59,8 @@ tests/config.sqlite: src/config/config.sql src/config/example.sql src/config/mim
 	$(SQLITE3_DIR)/sqlite3 $@ < src/config/example.sql
 	$(SQLITE3_DIR)/sqlite3 $@ < src/config/mimetypes.sql
 
-$(TESTS): %: %.c build/libm2.a
-	$(CC) $(CFLAGS) $(LIBS) -o $@ $< build/libm2.a
+$(TESTS): %: %.c %.o $(STATIC_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $@.o $(STATIC_LIBS)
 
 src/state.c: src/state.rl src/state_machine.rl
 src/http11/http11_parser.c: src/http11/http11_parser.rl
@@ -106,10 +109,10 @@ system_tests:
 	./tests/system_tests/curl_tests
 	./tests/system_tests/chat_tests
 
-sqlite3:
+$(SQLITE3_DIR)/sqlite3.a:
 	cd $(SQLITE3_DIR) && $(MAKE)
 
-zeromq:	$(ZEROMQ_DIR)/Makefile
+$(ZEROMQ_DIR)/src/.libs/libzmq.a:	$(ZEROMQ_DIR)/Makefile
 	cd $(ZEROMQ_DIR) && $(MAKE)
 
 $(ZEROMQ_DIR)/Makefile:
