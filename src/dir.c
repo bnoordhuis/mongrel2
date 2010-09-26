@@ -136,24 +136,54 @@ error:
     return NULL;
 }
 
-static inline int Dir_send_header(FileRecord *file, int sock_fd)
+static inline int Dir_send_header(FileRecord *file, Connection *conn)
 {
-    return fdsend(sock_fd, bdata(file->header), blength(file->header)) == blength(file->header);
+    return conn->send(conn, bdata(file->header), blength(file->header)) == blength(file->header);
 }
 
-int Dir_stream_file(FileRecord *file, int sock_fd)
+int Dir_stream_file(FileRecord *file, Connection *conn)
 {
     ssize_t sent = 0;
     size_t total = 0;
     off_t offset = 0;
     size_t block_size = MAX_SEND_BUFFER;
 
-    int rc = Dir_send_header(file, sock_fd);
+    // For the non-sendfile slowpath
+    char *file_buffer = NULL;
+    int nread = 0;
+    int amt = 0;
+    int tempfd = -1;
+
+    int rc = Dir_send_header(file, conn);
     check_debug(rc, "Failed to write header to socket.");
 
-    for(total = 0; fdwait(sock_fd, 'w') == 0 && total < file->sb.st_size; total += sent) {
-        sent = Dir_send(sock_fd, file->fd, &offset, block_size);
-        check_debug(sent > 0, "Failed to sendfile on socket: %d from file %d", sock_fd, file->fd);
+    if(conn->ssl == NULL) {
+        for(total = 0; fdwait(conn->fd, 'w') == 0 && total < file->sb.st_size;
+            total += sent) {
+            sent = Dir_send(conn->fd, file->fd, &offset, block_size);
+            check_debug(sent > 0, "Failed to sendfile on socket: %d from "
+                        "file %d", conn->fd, file->fd);
+        }
+    }
+    else {
+        // We have to reopen the file, so we don't get ourselves into seek
+        // position trouble
+        int tempfd = open((const char *)(file->full_path->data), O_RDONLY);
+        check(tempfd >= 0, "Could not reopen open file");
+
+        file_buffer = malloc(MAX_SEND_BUFFER);
+        check_mem(file_buffer);
+
+        while((nread = fdread(tempfd, file_buffer, MAX_SEND_BUFFER)) > 0) {
+            for(amt = 0, sent = 0; sent < nread; sent += amt) {
+                amt = conn->send(conn, file_buffer + sent, nread - sent);
+                check_debug(amt > 0, "Failed to send on socket: %d from "
+                            "file %d", conn->fd, tempfd);
+            }
+            total += nread;
+        }
+        free(file_buffer);
+        close(tempfd); tempfd = -1;
     }
     
     check(total <= file->sb.st_size, 
@@ -167,11 +197,13 @@ int Dir_stream_file(FileRecord *file, int sock_fd)
     return total;
 
 error:
+    if(file_buffer) free(file_buffer);
+    if(tempfd >= 0) close(tempfd);
     return -1;
 }
 
 
-Dir *Dir_create(const char *base, const char *prefix, const char *index_file, const char *default_ctype)
+Dir *Dir_create(const char *base, const char *index_file, const char *default_ctype)
 {
     Dir *dir = calloc(sizeof(Dir), 1);
     check_mem(dir);
@@ -187,21 +219,6 @@ Dir *Dir_create(const char *base, const char *prefix, const char *index_file, co
     check(blength(dir->base) < MAX_DIR_PATH, "Base directory is too long, must be less than %d", MAX_DIR_PATH);
     check(bchar(dir->base, 0) != '/', "Don't start the base with / in %s, that will fail when not in chroot.", base);
     check(bchar(dir->base, blength(dir->base) - 1) == '/', "End directory base with / in %s or it won't work right.", base);
-
-
-    // dir can come from the routing table so it could have a pattern in it, strip that off
-    bstring pattern = bfromcstr(prefix);
-    int first_paren = bstrchr(pattern, '(');
-    dir->prefix = first_paren >= 0 ? bHead(pattern, first_paren) : bstrcpy(pattern);
-    bdestroy(pattern);
-
-    check(blength(dir->prefix) < MAX_DIR_PATH, "Prefix is too long, must be less than %d", MAX_DIR_PATH);
-
-    check(bchar(dir->prefix, 0) == '/', "Dir route prefix (%s) must start with / or else it won't work.", bdata(dir->prefix));
-
-    if(bchar(dir->prefix, blength(dir->prefix)-1) != '/') {
-        log_info("Dir prefix %s doesn't end in / so assuming it's a file.", bdata(dir->prefix));
-    }
 
     dir->index_file = bfromcstr(index_file);
     dir->default_ctype = bfromcstr(default_ctype);
@@ -225,7 +242,6 @@ void Dir_destroy(Dir *dir)
 {
     if(dir) {
         bdestroy(dir->base);
-        bdestroy(dir->prefix);
         bdestroy(dir->index_file);
         bdestroy(dir->normalized_base);
         bdestroy(dir->default_ctype);
@@ -321,17 +337,14 @@ FileRecord *FileRecord_cache_check(Dir *dir, bstring path)
 }
 
 
-FileRecord *Dir_resolve_file(Dir *dir, bstring path)
+FileRecord *Dir_resolve_file(Dir *dir, bstring pattern, bstring path)
 {
     FileRecord *file = NULL;
     bstring target = NULL;
+    bstring prefix = NULL;
 
     check(Dir_lazy_normalize_base(dir) == 0, "Failed to normalize base path when requesting %s",
             bdata(path));
-
-    check(bstrncmp(path, dir->prefix, blength(dir->prefix)) == 0, 
-            "Request for path %s does not start with %s prefix.", 
-            bdata(path), bdata(dir->prefix));
 
     file = FileRecord_cache_check(dir, path);
 
@@ -340,31 +353,31 @@ FileRecord *Dir_resolve_file(Dir *dir, bstring path)
         file->users++;
         return file;
     }
+    
+    int paren = bstrchr(pattern, '(');
+    prefix = (paren > 0) ? bHead(pattern, paren) : bstrcpy(pattern);
 
-    // We subtract one from the blengths below, because dir->prefix includes
-    // a trailing '/'.  If we skip over this in path->data, we drop the '/'
-    // from the URI, breaking the target path
-    debug("Building target from base: %s prefix: %s index_file: %s path: %s", 
+    check(bchar(prefix, 0) == '/', "Route '%s' pointing to directory must have pattern with leading '/'", bdata(pattern));
+    check(blength(prefix) < MAX_DIR_PATH, "Prefix is too long, must be less than %d", MAX_DIR_PATH);
+
+    debug("Building target from base: %s pattern: %s prefix: %s path: %s index_file: %s", 
             bdata(dir->normalized_base),
-            bdata(dir->prefix),
-            bdata(dir->index_file),
-            bdata(path));
+            bdata(pattern),
+            bdata(prefix),
+            bdata(path),
+            bdata(dir->index_file));
 
     if(bchar(path, blength(path) - 1) == '/') {
         // a directory so figureo out the index file
         target = bformat("%s%s%s",
-                    bdata(dir->normalized_base),
-                    path->data + blength(dir->prefix) - 1,
-                    bdata(dir->index_file));
-    } else if(biseq(dir->prefix, path)) {
-        // a full path to a file that matches the Dir prefix as a file
-        // TODO: optimize this somewhat and make sure it doesn't make weird paths
-        target = bformat("%s%s", bdata(dir->normalized_base), bdata(path)); 
+                         bdata(dir->normalized_base),
+                         path->data + blength(prefix) - 1,
+                         bdata(dir->index_file));
+    } else if(biseq(prefix, path)) {
+        target = bformat("%s%s", bdata(dir->normalized_base), bdata(path));
+
     } else {
-        // all other requests for files
-        target = bformat("%s%s",
-                bdata(dir->normalized_base),
-                path->data + blength(dir->prefix) - 1);
+        target = bformat("%s%s", bdata(dir->normalized_base), path->data + blength(prefix) - 1);
     }
 
     check(target, "Couldn't construct target path for %s", bdata(path));
@@ -425,9 +438,6 @@ static inline bstring Dir_none_match(Request *req, FileRecord *file, int if_modi
     return &HTTP_500;
 }
 
-
-
-
 static inline bstring Dir_calculate_response(Request *req, FileRecord *file)
 {
     int if_unmodified_since = 0;
@@ -481,11 +491,12 @@ static inline bstring Dir_calculate_response(Request *req, FileRecord *file)
     return &HTTP_500;
 }
 
-int Dir_serve_file(Dir *dir, Request *req, int fd)
+int Dir_serve_file(Dir *dir, Request *req, Connection *conn)
 {
     FileRecord *file = NULL;
     bstring resp = NULL;
     bstring path = Request_path(req);
+    bstring pattern = req->pattern;
     int rc = 0;
     int is_get = biseq(req->request_method, &HTTP_GET);
     int is_head = is_get ? 0 : biseq(req->request_method, &HTTP_HEAD);
@@ -495,22 +506,22 @@ int Dir_serve_file(Dir *dir, Request *req, int fd)
 
     if(!(is_get || is_head)) {
         req->status_code = 405;
-        rc = Response_send_status(fd, &HTTP_405);
+        rc = Response_send_status(conn, &HTTP_405);
         check_debug(rc == blength(&HTTP_405), "Failed to send 405 to client.");
         return -1;
     } else {
-        file = Dir_resolve_file(dir, path);
+        file = Dir_resolve_file(dir, pattern, path);
         resp = Dir_calculate_response(req, file);
 
         if(resp) {
-            rc = Response_send_status(fd, resp);
+            rc = Response_send_status(conn, resp);
             check_debug(rc == blength(resp), "Failed to send error response on file serving.");
         } else if(is_get) {
-            rc = Dir_stream_file(file, fd);
+            rc = Dir_stream_file(file, conn);
             req->response_size = rc;
             check_debug(rc == file->sb.st_size, "Didn't send all of the file, sent %d of %s.", rc, bdata(path));
         } else if(is_head) {
-            rc = Dir_send_header(file, fd);
+            rc = Dir_send_header(file, conn);
             check_debug(rc, "Failed to write header to socket.");
         } else {
             sentinel("How the hell did you get to here. Tell Zed.");

@@ -112,35 +112,28 @@ struct tagbstring HTTP_412 = bsStatic("HTTP/1.1 412 Precondition Failed\r\n"
 struct tagbstring HTTP_304 = bsStatic("HTTP/1.1 304 Not Modified\r\n"
     "Content-Type: text/plain\r\n"
     "Connection: close\r\n"
-    "Content-Length: 12\r\n"
+    "Content-Length: 0\r\n"
     "Server: " VERSION 
-    "\r\n\r\n"
-    "Not Modified");
+    "\r\n\r\n");
 
-
-struct tagbstring HTTP_205 = bsStatic("HTTP/1.1 205 Reset Content\r\n"
-    "Content-Type: text/plain\r\n"
-    "Connection: close\r\n"
-    "Content-Length: 13\r\n"
-    "Server: " VERSION 
-    "\r\n\r\n"
-    "Reset Content");
 
 struct tagbstring FLASH_RESPONSE = bsStatic("<?xml version=\"1.0\"?>"
         "<!DOCTYPE cross-domain-policy SYSTEM \"http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd\">"
         "<cross-domain-policy> <allow-access-from domain=\"*\" to-ports=\"*\" /></cross-domain-policy>");
 
 
-int Response_send_status(int fd, bstring error)
+int Response_send_status(Connection *conn, bstring error)
 {
-    return fdsend(fd, bdata(error), blength(error));
+    return conn->send(conn, bdata(error), blength(error));
 }
 
 
-int Response_send_socket_policy(int fd)
+int Response_send_socket_policy(Connection *conn)
 {
     // must have +1 to include the \0 that xml sockets expect
-    return fdsend(fd, bdata(&FLASH_RESPONSE), blength(&FLASH_RESPONSE) + 1);
+    return conn->send(conn, bdata(&FLASH_RESPONSE),
+                      blength(&FLASH_RESPONSE) + 1);
+
 }
 
 

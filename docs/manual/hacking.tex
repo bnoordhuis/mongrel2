@@ -16,7 +16,7 @@ else for your handlers.
 Currently supported languages are:
 
 \begin{description}
-\item [Python] When you installed the \shell{m2sh} gear, you also got a \ident{mongrel2} Python library.
+\item [Python] The directory \file{examples/python} contain the Mongrel2 Python library \ident{m2py}.
 \item [Ruby] Probably the most extensively supported language, with good Rack support, by \href{http://github.com/perplexes/m2r}{perplexes on github}.
 \item [C++] C++ support by \href{http://github.com/akrennmair/mongrel2-cpp}{akrennmair on github}.
 \item [PHP] PHP support by \href{http://github.com/winks/m2php}{winks on github}.
@@ -431,7 +431,7 @@ format is designed to accomplish a few things in the simplest way possible:
 \item Be useful within ZeroMQ so that you can do subscriptions and routing.
 \end{enumerate}
 
-To satisfy these features we use haveo types of ZeroMQ sockets (soon to be configurable),
+To satisfy these features we use different types of ZeroMQ sockets (soon to be configurable),
 a request format that Mongrel2 sends and a response format that the handlers send back.  Most
 importantly, there is \emph{nothing about the request and response that must be connected}.  In most
 cases they will be connected, but you can receive a request from one browser and send a response
@@ -458,7 +458,7 @@ so that you understand why the message format is the way it is.
 This leads to rule number 1:
 
 \begin{quote}
-\emph{Rule 1:} Handlers receive on with PULL and send with PUB sockets.
+\emph{Rule 1:} Handlers receive with PULL and send with PUB sockets.
 \end{quote}
 
 \subsection{UUID Addressing}
@@ -478,7 +478,7 @@ UUID as the very first thing.
 
 You then need a way to identify a particular listener (browser, client, etc.)
 that your message should target, \emph{and} Mongrel2 needs to tell you who is
-sending your handler the request.  This means Mongrel2 sends you is just one
+sending your handler the request.  This means Mongrel2 sends you just one
 identifier, but you can send Mongrel2 a list of them.  This leads to rule 3:
 
 \begin{quote}
@@ -799,17 +799,8 @@ Hopefully, you can figure it out from the code, but if not, let me know.
 
 \section{Other Language APIs}
 
-As mentioned before, there are currently APIs for Ruby, C++, and PHP in
-addition to the Python code:
-
-
-\begin{description}
-\item [Python] When you installed the \shell{m2sh} gear, you also got a \ident{mongrel2} Python library.
-\item [Ruby] Probably the most extensively supported language, with good Rack support, by \href{http://github.com/perplexes/m2r}{perplexes on github}.
-\item [C++] C++ support by \href{http://github.com/akrennmair/mongrel2-cpp}{akrennmair on github}.
-\item [PHP] PHP support by \href{http://github.com/winks/m2php}{winks on github}.
-\end{description}
-
+There's at least 10 langauges available for Mongrel2, so check out the
+main \href{http://mongrel2.org}{mongrel2.org site} for the full list.
 
 If you want to implement another language, it should be fairly trivial.
 Just base your design on the Python API so that it is consistent, but, please,
@@ -824,7 +815,7 @@ home and it's easy for them.
 The very last thing I will cover in the section on hacking Mongrel2 is how to
 write your own \shell{m2sh} script in your favorite language.  Obviously, if
 you're doing this you should probably have a good reason\footnote{Like if
-you're a Ruby weenie and Python is banned at your company because they like
+you're a Ruby weenie and C is banned at your company because they like
 dogma more than money.}.  What writing your own, or understanding what
 \shell{m2sh} is doing will do for you, though, is help you when you start to
 think about automating Mongrel2 for your deployments.
@@ -838,16 +829,21 @@ This is why Mongrel2 is designed the way it is, using the MVC model.  It
 lets \emph{you} create your own View like m2sh, web interfaces, automation
 scripts, and anything else you need to make it easier to manage more.
 
-If you want to write your own \shell{m2sh} then first go have a look at
-the Python code in \file{examples/python/config}.  This is where each
-command lives, where the argument parsing is and, most importantly, the
-ORM model that works the raw SQLite database.
+If you want to write your own \shell{m2sh} then first go have a look at the
+Python code in \file{examples/python/config} and the \shell{m2shpy} script that
+installs.  This is where each command lives, where the argument parsing is and,
+most importantly, the ORM model that works the raw SQLite database.
 
 The next thing to do is to make your tool craft databases and compare the
 results to what m2sh does for a similar configuration.  I recommend you make
 a database that's ``correct'' with m2sh, and then dump it via \shell{sqlite3}.
 After that, use your tool to make your own database, dump it, and then use
 \shell{diff} to compare your results to mine.
+
+You can also look at how the C version of m2sh that is installed by default
+is written.  It lives in \file{tools/m2sh} and has a completely different
+design but does nearly the same things.  If you know C then this comparing
+the two is also educational.
 
 Finally, you'll need to look at two base schema files:
 \file{src/config/config.sql} and \file{src/config/mimetypes.sql}, where
@@ -857,3 +853,4 @@ that's the table to put it in.}  Your tool should be able to use this
 SQL to make its database, or at least know what it does.
 
 If you do something cool with all of this, let us know.
+

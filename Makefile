@@ -1,8 +1,5 @@
-SQLITE3_DIR=deps/sqlite3-3.7.2
-ZEROMQ_DIR=deps/zeromq-2.0.8
-
-CFLAGS=-g -Wall -Isrc -I$(SQLITE3_DIR) -I$(ZEROMQ_DIR)/include
-LDFLAGS=-pthread -luuid -ldl
+CFLAGS=-g -O2 -Wall -Isrc -DNDEBUG $(OPTFLAGS)
+LIBS=-lzmq -lsqlite3  $(OPTLIBS)
 PREFIX?=/usr/local
 
 ASM=$(wildcard src/**/*.S src/*.S)
@@ -14,15 +11,13 @@ LIB_OBJ=$(filter-out src/mongrel2.o,${OBJECTS})
 TEST_SRC=$(wildcard tests/*.c)
 TESTS=$(patsubst %.c,%,${TEST_SRC})
 
-STATIC_LIBS=build/libm2.a $(SQLITE3_DIR)/sqlite3.a $(ZEROMQ_DIR)/src/.libs/libzmq.a
+all: bin/mongrel2 tests m2sh
 
-all: bin/mongrel2 tests
+dev: CFLAGS=-g -Wall -Isrc -Wall -Wextra $(OPTFLAGS)
+dev: all
 
-release: CFLAGS=-O2 -Wall -Isrc -DNDEBUG
-release: all
-
-bin/mongrel2: $(STATIC_LIBS) src/mongrel2.o
-	$(CXX) $(LDFLAGS) src/mongrel2.o -o $@ $(STATIC_LIBS)
+bin/mongrel2: build/libm2.a src/mongrel2.o
+	$(CC) $(CFLAGS) $(LIBS) src/mongrel2.o -o $@ $<
 
 build/libm2.a: build ${LIB_OBJ}
 	ar rcs $@ ${LIB_OBJ}
@@ -35,32 +30,28 @@ build:
 clean:
 	rm -rf build bin lib ${OBJECTS} ${TESTS} tests/config.sqlite
 	find . -name "*.gc*" -exec rm {} \;
-	cd $(SQLITE3_DIR) && $(MAKE) clean
-	cd $(ZEROMQ_DIR) && $(MAKE) clean
-	rm -f $(TESTS) tests/*.o
-
-distclean:	pristine
+	make -C tools/m2sh clean
 
 pristine: clean
-	rm -rf examples/python/build examples/python/dist examples/python/m2py.egg-info
-	find . -name "*.pyc" -exec rm {} \;
-	cd docs/manual && make clean
+	sudo rm -rf examples/python/build examples/python/dist examples/python/m2py.egg-info
+	sudo find . -name "*.pyc" -exec rm {} \;
+	make -C docs/manual clean
 	cd docs/ && make clean
-	cd examples/kegogi && make clean
+	make -C examples/kegogi clean
 	rm -f logs/*
 	rm -f run/*
-	cd $(ZEROMQ_DIR) && rm -f Makefile
+	make -C tools/m2sh pristine
 
 tests: build/libm2.a tests/config.sqlite ${TESTS}
 	sh ./tests/runtests.sh
 
 tests/config.sqlite: src/config/config.sql src/config/example.sql src/config/mimetypes.sql
-	$(SQLITE3_DIR)/sqlite3 $@ < src/config/config.sql
-	$(SQLITE3_DIR)/sqlite3 $@ < src/config/example.sql
-	$(SQLITE3_DIR)/sqlite3 $@ < src/config/mimetypes.sql
+	sqlite3 $@ < src/config/config.sql
+	sqlite3 $@ < src/config/example.sql
+	sqlite3 $@ < src/config/mimetypes.sql
 
-$(TESTS): %: %.c %.o $(STATIC_LIBS)
-	$(CXX) $(LDFLAGS) -o $@ $@.o $(STATIC_LIBS)
+$(TESTS): %: %.c build/libm2.a
+	$(CC) $(CFLAGS) $(LIBS) -o $@ $< build/libm2.a
 
 src/state.c: src/state.rl src/state_machine.rl
 src/http11/http11_parser.c: src/http11/http11_parser.rl
@@ -71,14 +62,17 @@ check:
 	@echo Files with potentially dangerous functions.
 	@egrep '[^_.>a-zA-Z0-9](str(n?cpy|n?cat|xfrm|n?dup|str|pbrk|tok|_)|stpn?cpy|a?sn?printf|byte_)' $(filter-out src/bstr/bsafe.c,${SOURCES})
 
-install: all install-bin #install-py 
+m2sh: 
+	make -C tools/m2sh all
+
+install: all install-bin install-m2sh
 
 install-bin:
 	install -d $(PREFIX)/bin/
 	install bin/mongrel2 $(PREFIX)/bin/
 
-install-py: examples/python/mongrel2/sql/config.sql
-	cd examples/python && python setup.py install
+install-m2sh:
+	make -C tools/m2sh install
 
 examples/python/mongrel2/sql/config.sql: src/config/config.sql src/config/mimetypes.sql
 	cat src/config/config.sql src/config/mimetypes.sql > $@
@@ -108,12 +102,3 @@ coverage_report:
 system_tests:
 	./tests/system_tests/curl_tests
 	./tests/system_tests/chat_tests
-
-$(SQLITE3_DIR)/sqlite3.a:
-	cd $(SQLITE3_DIR) && $(MAKE)
-
-$(ZEROMQ_DIR)/src/.libs/libzmq.a:	$(ZEROMQ_DIR)/Makefile
-	cd $(ZEROMQ_DIR) && $(MAKE)
-
-$(ZEROMQ_DIR)/Makefile:
-	cd $(ZEROMQ_DIR) && ./configure --prefix=$(PREFIX)

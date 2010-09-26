@@ -18,8 +18,7 @@ on in this section:
 \item [Mongrel2] I know, hard to believe, but you actually need to have Mongrel2 installed.
 \item [m2sh] Again, not sure why, but some folks think they don't need this.  Unless you've
     written your own, you need \shell{m2sh}.
-\item [Python] Obviously, if you have \shell{m2sh}, then you have Python, but some systems
-    (like Debian) don't install all of Python.  Make sure your Python setup is good.
+\item [Python] Some systems (like Debian) don't install all of Python.  Make sure your Python setup is good.
 \item [root] You'll need root access on your box.  Either through \shell{sudo} or some other means.
 \item [Basic Python coding] Right now, you should be able to do some basic Python.
 \end{description}
@@ -192,14 +191,13 @@ deployment/profiles > mkdir chat mp3stream handlertest web mongrel2
 deployment/profiles > cd ..
 
 # setup the mongrel2 database initially
-deployment > m2sh init -db config.sqlite
 
 # copy the mongrel2_conf.py sample from the source to here
-deployment > cp ~/mongrel2/examples/python/tests/mongrel2_org.py config.py
+deployment > cp ~/mongrel2/examples/configs/mongrel2.conf mongrel2.conf
 
 # see our end results
 deployment > ls
-config.py  config.sqlite  logs  profiles  run  static tmp
+mongrel2.conf  config.sqlite  logs  profiles  run  static tmp
 
 \end{lstlisting}
 \end{code}
@@ -216,8 +214,8 @@ What we've done here is the following:
   \item Created \file{run}, \file{tmp}, \file{logs}, and \file{profiles} that Mongrel2 and procer need to run.
   \item In profiles we started dirs for \file{chat}, \file{mp3stream}, \file{handlertest}, \file{web} and \file{mongrel2},
     that procer will read files out of to get all our gear up and running.
-  \item Initialized the \file{config.sqlite} file we'll be filling in with our modififed config.py.
-  \item Copied the \file{mongrel2\_org.py} example file over to our deployment so we can modify it.
+  \item Initialized the \file{config.sqlite} file we'll be filling in with our modififed mongrel2.conf.
+  \item Copied the \file{mongrel2.conf} example file over to our deployment so we can modify it.
 \end{enumerate}
 
 
@@ -226,7 +224,7 @@ What we've done here is the following:
 Now we're ready to get the configuration working.  Here's the thing, though: you should
 try to alter the configuration yourself.  I've already given you the file and you are
 going to have to make the changes to meet the requirements for this deployment directory.
-Here's what you have to change in \file{config.py} to make everything work right:
+Here's what you have to change in \file{mongrel2.conf} to make everything work right:
 
 \begin{enumerate}
 \item Get rid of the \ident{test\_directory} handler, since we won't need it, and
@@ -242,7 +240,7 @@ Here's what you have to change in \file{config.py} to make everything work right
 \end{enumerate}
 
 Once you have that all edited, you should be able to run \shell{m2sh load -db
-config.sqlite -config config.py} and it'll just load it up.  Try using
+config.sqlite -config mongrel2.conf} and it'll just load it up.  Try using
 \shell{m2sh servers} and \shell{m2sh hosts} to take a peek.
 
 
@@ -426,7 +424,7 @@ DEPLOY=/home/YOU/deployment
 SOURCE=/home/YOU/projects/mongrel2
 
 cd $SOURCE/examples/chat
-nohup python -u chat.py 2>&1 > chat.log &
+python -u chat.py 2>&1 > chat.log &
 echo $! > $DEPLOY/profiles/chat/chat.pid
 \end{lstlisting}
 \end{code}

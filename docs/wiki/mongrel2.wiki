@@ -7,7 +7,7 @@ server that focuses on web <b>applications</b> using <em>modern</em> browser
 technologies.</p>
 
 <div class="donors">
-<img src="/static/logo.png" align="right"><br/>
+<img src="http://mongrel2.org/static/logo.png" align="right"><br/>
 
 <h3>Thanks To</h3>
 <ul class="donors">
@@ -54,10 +54,10 @@ technologies.</p>
 <p>Mongrel2 is now 1.0 as of Sep 1 2010:</p>
 
 <ul>
-    <li><a href="/static/downloads/mongrel2-1.0.tar.bz2">mongrel2-1.0.tar.bz2</a> 
-    MD5: e09793c3725fcb5977af9aa6d7c48002</li>
-    <li><a href="/static/downloads/mongrel2-1.0.zip">mongrel2-1.0.zip</a>
-    MD5: 1af42b2f80e10305e4fcd7f11a8a564d</li>
+    <li><a href="/static/downloads/mongrel2-1.2.tar.bz2">mongrel2-1.2.tar.bz2</a> 
+    MD5: </li>
+    <li><a href="/static/downloads/mongrel2-1.2.zip">mongrel2-1.2.zip</a>
+    MD5: </li>
 </ul>
 
 
@@ -80,8 +80,9 @@ Currently we have:<p>
 <p>We've started translating the manual into Russian as well, for now you can read the 
 <a href="/wiki?name=GettingStarted">GettingStarted</a> document in
 <a href="/doc/tip/docs/ru/wiki/GettingStarted.wiki">Russian</a>,
-<a href="/doc/tip/docs/es/wiki/GettingStarted.wiki">Spanish</a> and
-<a href="/doc/tip/docs/de/wiki/GettingStarted.wiki">German</a> 
+<a href="/doc/tip/docs/es/wiki/GettingStarted.wiki">Spanish</a>,
+<a href="/doc/tip/docs/de/wiki/GettingStarted.wiki">German</a> and
+<a href="/doc/tip/docs/fr/wiki/GettingStarted.wiki">French</a>
 with more to come.</p>
 
 

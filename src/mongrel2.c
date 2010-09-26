@@ -105,10 +105,12 @@ void start_terminator()
 Server *load_server(const char *db_file, const char *server_uuid, int reuse_fd)
 {
     int rc = 0;
+    Server *srv =  NULL;
+
     rc = Config_init_db(db_file);
     check(rc == 0, "Failed to load config database at %s", db_file);
-
-    Server *srv = Config_load_server(server_uuid);
+    
+    srv = Config_load_server(server_uuid);
     check(srv, "Failed to load server %s from %s", server_uuid, db_file);
 
     rc = Config_load_mimetypes();
@@ -214,8 +216,9 @@ Server *reload_server(Server *old_srv, const char *db_file, const char *server_u
 
     MIME_destroy();
 
-    Config_stop_handlers(old_srv);
-    Config_stop_proxies(old_srv);
+    Config_stop_handlers();
+    Config_stop_proxies();
+    Config_stop_dirs();
     Setting_destroy();
 
     Server *srv = load_server(db_file, server_uuid, old_srv->listen_fd);
@@ -232,8 +235,9 @@ error:
 void complete_shutdown(Server *srv)
 {
     fdclose(srv->listen_fd);
-    Config_stop_handlers(srv);
-    Config_stop_proxies(srv);
+    Config_stop_handlers();
+    Config_stop_proxies();
+    Config_stop_dirs();
 
     int left = taskwaiting();
 

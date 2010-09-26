@@ -3,6 +3,8 @@
 <p>Some donors request that their names be put on a list of donors to show support for Mongrel, and some wanted everyone to know how much they donated (usually because it was a funny joke).</p>
 
 <ul>
+<li><a href="http://websterclay.com/">Webster Clay</a></li>
+<li><a href="http://cramerdev.com/">Cramerdev</a></li>
 <li><a href="http://innergysoftware.com/">Victor Olteanu, Innergy Software</a>
 <li><a href="http://ThinkCode.TV">ThinkCode.TV</a></li>
 <li><a href="http://envato.com/">Envato</a></li>
@@ -12,7 +14,7 @@
 <li><a href="http://www.onepageperday.com">Matt Murphy</a></li>
 <li><font size="1%">Paul T ($1 so funny)</font></li>
 <li>Ben Aτkin ($6.28)</li>
-<li>Kevin Stewart</li>
+<li><a href="http://working-code.com">Kevin Stewart</a></li>
 <li>Shane Emmons</li>
 <li>Silas Sewell</li>
 <li>Íslenska lýðnetsfélagið ehf.</li>

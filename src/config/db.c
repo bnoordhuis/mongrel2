@@ -70,7 +70,13 @@ int DB_exec(const char *query,
     return 0;
 
 error:
+    if(zErrMsg) sqlite3_free(zErrMsg);
     return -1;
 }
 
+
+int DB_lastid()
+{
+    return (int)sqlite3_last_insert_rowid(CONFIG_DB);
+}
 
