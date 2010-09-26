@@ -34,3 +34,7 @@ tests/empty.sqlite
 tests/test.pid
 examples/python/build/
 tools/lemon/lemon
+tools/m2sh/build/
+tools/m2sh/src/parser.out
+tools/m2sh/tests/cli_tests
+tools/m2sh/tests/parser_tests
