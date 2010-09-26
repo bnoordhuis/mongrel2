@@ -1,5 +1,5 @@
-CFLAGS=-DNDEBUG -g -I../../src -Isrc -Wall $(OPTFLAGS)
-LIBS=-lzmq -lsqlite3 ../../build/libm2.a
+#CFLAGS=-DNDEBUG -g -I../../src -Isrc -Wall $(OPTFLAGS)
+#LIBS=-lzmq -lsqlite3 ../../build/libm2.a
 
 PREFIX?=/usr/local
 SOURCES=$(wildcard src/*.c)
@@ -24,7 +24,7 @@ build/libm2sh.a: ${LIB_OBJ}
 
 build/m2sh: ../lemon/lemon ../../build/libm2.a build/libm2sh.a src/m2sh.o
 	mkdir -p build
-	$(CC) $(CFLAGS) $(LIBS) -o build/m2sh src/m2sh.o build/libm2sh.a ../../build/libm2.a
+	$(CXX) $(LDFLAGS) -o build/m2sh src/m2sh.o build/libm2sh.a $(STATIC_LIBS)
 
 ../lemon/lemon: ../lemon/lemon.c
 	$(CC) -O2 ../lemon/lemon.c -o ../lemon/lemon
@@ -39,7 +39,7 @@ tests: build/libm2sh.a ${TESTS}
 	ragel -G2 $<
 
 $(TESTS): %: %.c build/libm2sh.a
-	$(CC) $(CFLAGS) $(LIBS) -o $@ $< build/libm2sh.a ../../build/libm2.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< build/libm2sh.a ../../build/libm2.a
 
 ../../build/libm2.a:
 	cd ../.. && make clean all

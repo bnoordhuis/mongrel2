@@ -1,7 +1,7 @@
-SQLITE3_DIR=deps/sqlite3-3.7.2
-ZEROMQ_DIR=deps/zeromq-2.0.8
+SQLITE3_DIR=$(PWD)/deps/sqlite3-3.7.2
+ZEROMQ_DIR=$(PWD)/deps/zeromq-2.0.8
 
-CFLAGS=-Wall -Isrc -I$(SQLITE3_DIR) -I$(ZEROMQ_DIR)/include
+CFLAGS=-Wall -I$(PWD)/src -I$(SQLITE3_DIR) -I$(ZEROMQ_DIR)/include
 LDFLAGS=-pthread -luuid -ldl
 PREFIX?=/usr/local
 
@@ -14,12 +14,12 @@ LIB_OBJ=$(filter-out src/mongrel2.o,${OBJECTS})
 TEST_SRC=$(wildcard tests/*.c)
 TESTS=$(patsubst %.c,%,${TEST_SRC})
 
-STATIC_LIBS=build/libm2.a $(SQLITE3_DIR)/sqlite3.a $(ZEROMQ_DIR)/src/.libs/libzmq.a
+STATIC_LIBS=$(PWD)/build/libm2.a $(SQLITE3_DIR)/sqlite3.a $(ZEROMQ_DIR)/src/.libs/libzmq.a
 
 release: CFLAGS+=-O2 -DNDEBUG
 release: all
 
-dev: CFLAGS=-g -Wall -Wextra
+dev: CFLAGS+=-g -Wall -Wextra
 dev: all
 
 all: bin/mongrel2 tests m2sh
@@ -27,6 +27,7 @@ all: bin/mongrel2 tests m2sh
 bin/mongrel2: $(STATIC_LIBS) src/mongrel2.o
 	$(CXX) $(LDFLAGS) src/mongrel2.o -o $@ $(STATIC_LIBS)
 
+$(PWD)/build/libm2.a: build/libm2.a
 build/libm2.a: build ${LIB_OBJ}
 	ar rcs $@ ${LIB_OBJ}
 	ranlib $@
@@ -77,7 +78,7 @@ check:
 	@egrep '[^_.>a-zA-Z0-9](str(n?cpy|n?cat|xfrm|n?dup|str|pbrk|tok|_)|stpn?cpy|a?sn?printf|byte_)' $(filter-out src/bstr/bsafe.c,${SOURCES})
 
 m2sh:
-	$(MAKE) -C tools/m2sh all
+	$(MAKE) -C tools/m2sh all "CFLAGS=$(CFLAGS) -Isrc" "LDFLAGS=$(LDFLAGS)" "STATIC_LIBS=$(STATIC_LIBS)"
 
 install: all install-bin install-m2sh
 
@@ -86,7 +87,7 @@ install-bin:
 	install bin/mongrel2 $(PREFIX)/bin/
 
 install-m2sh:
-	$(MAKE) -C tools/m2sh all
+	$(MAKE) -C tools/m2sh install
 
 examples/python/mongrel2/sql/config.sql: src/config/config.sql src/config/mimetypes.sql
 	cat src/config/config.sql src/config/mimetypes.sql > $@
